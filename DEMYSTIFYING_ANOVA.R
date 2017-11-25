@@ -3,6 +3,7 @@
 
 library(dplyr)
 library(ggplot2)
+library('cowplot')
 
 
 ## SET PARAMETERS ----
@@ -27,18 +28,26 @@ df.full <- left_join(df, group.means) %>%
          resid = y - y.mean, 
          squares.resid = resid^2)
 
-ggplot(group.means, aes(x = x, y = y.mean)) + 
-  geom_point() + 
-  geom_hline(yintercept = grand.mean) +
-  geom_segment(aes(yend = y.mean, y = grand.mean, xend = x, x = x))
+variance_betweengroups <- ggplot(group.means, aes(x = x, y = y.mean)) + 
+  geom_point(color = "red") + 
+  geom_hline(yintercept = grand.mean, linetype = "dotted") +
+  geom_segment(aes(yend = y.mean, y = grand.mean, xend = x, x = x), color = "red") +
+  scale_y_continuous(limits = range(y)) + 
+  ylab("y")
 
-ggplot(df.full, aes(x = x.jitter, y = y)) + 
+variance_withingroups <- ggplot(df.full, aes(x = x.jitter, y = y)) + 
   geom_point() + 
   geom_linerange(aes(ymin = y.mean, ymax = y)) +
   geom_errorbarh(aes(xmin = as.numeric(x) - stdev*3, 
                      xmax = as.numeric(x) + stdev*3, 
                      y = y.mean),
-                 color = "red")
+                 height = 0,
+                 color = "red",
+                 linetype = "solid") +
+  scale_x_continuous(name = "x", breaks = c(1,2), labels = c("A","B"), limits = c(0.5,2.5)) 
+
+plot_grid(variance_betweengroups, variance_withingroups)
+  
 
 ## ANOVA with R ----
 
