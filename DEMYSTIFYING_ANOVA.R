@@ -10,8 +10,12 @@ library(ggplot2)
 n <- 100 # sample size
 y <- rnorm(n) # generate random responses from a normal distribution
 groups <- LETTERS[1:2] # number of groups
-x <- rep_len(groups, n) # factor variable
-df <- data.frame(y, x) # create data frame
+x <- as.factor(rep_len(groups, n)) # factor variable
+
+stdev <- 0.05
+x.jitter <- as.numeric(x) + rnorm(n, sd = stdev)
+df <- data.frame(y, x, x.jitter) # create data frame
+
 
 group.means <- df %>% group_by(x) %>% summarise(y.mean = mean(y)) # get mean response for each factor level
 grand.mean <- mean(y)
@@ -25,12 +29,16 @@ df.full <- left_join(df, group.means) %>%
 
 ggplot(group.means, aes(x = x, y = y.mean)) + 
   geom_point() + 
-  geom_hline(yintercept = grand.mean)
-
-ggplot(df.full, aes(x = x, y = y)) + 
-  geom_jitter(width = 0.2) + 
   geom_hline(yintercept = grand.mean) +
-  geom_line(aes(x = x, y = resid.mean))
+  geom_segment(aes(yend = y.mean, y = grand.mean, xend = x, x = x))
+
+ggplot(df.full, aes(x = x.jitter, y = y)) + 
+  geom_point() + 
+  geom_linerange(aes(ymin = y.mean, ymax = y)) +
+  geom_errorbarh(aes(xmin = as.numeric(x) - stdev*3, 
+                     xmax = as.numeric(x) + stdev*3, 
+                     y = y.mean),
+                 color = "red")
 
 ## ANOVA with R ----
 
