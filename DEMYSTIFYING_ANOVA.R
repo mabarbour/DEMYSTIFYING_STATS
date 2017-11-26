@@ -1,10 +1,63 @@
 
+## GOALS ----
+
+# WHY WOULD YOU USE THIS?
+# We want to test whether groups vary in their response.
+
+# ANOVA will work well if the mean is a good description of the center of each group's response. 
+# ANOVA calculates the mean for each group
+# 1. Calculate the mean of all the responses. Let's call this the "grand mean"
+# 2. Calculate the mean response of each group. Let's call these the "group means"
+# 3. Calculate the difference between each group mean and the grand mean. Square these differences and add them all up. We'll call these the "Group Sum of Squares". Note that this is the numerator of the "Group Variance".
+# 4. Calculate the difference between each response and its corresponding group mean. Square these differences and add them all up. We'll call these the "Residual Sum of Squares". Note that this is the numerator of the "Residual Variance". 
+# 5. Calculate the "Mean Group Sum of Squares". This is actually the same as the "Between Group Variance". Divide the "Group Sum of Squares" by the "Group DF".
+# 6. Calculate the "Mean Residual Sum of Squares". This is actually the same as the "Within Group Variance". Divide the "Residual Sum of Squares" by the "Residual DF".
+# 
+# ANOVA does this by calculating the
+
+# In this example, groups  
+# Possible Analyses: Analysis of Variance (ANOVA), Two-Sample t-test
+
+# WHY IS IT CALLED ANOVA?
+
+
 ## LOAD REQUIRED LIBRARIES ----
 
 library(dplyr)
 library(ggplot2)
-library('cowplot')
+library(cowplot)
 
+## LOAD DATA
+data(iris)
+grand.mean_Petal.Length <- mean(iris$Petal.Length)
+
+species.means <- iris %>% group_by(Species) %>% summarise(mean_Petal.Length = mean(Petal.Length)) # get mean response for each factor level
+
+setosa.mean_Petal.Length <- mean(filter(iris, Species == "setosa")$Petal.Length)
+versicolor.mean_Petal.Length <- mean(filter(iris, Species == "versicolor")$Petal.Length)
+virginica.mean_Petal.Length <- mean(filter(iris, Species == "virginica")$Petal.Length)
+
+iris.new <- left_join(iris, species.means) %>% 
+  mutate(grand.mean_Petal.Length = grand.mean_Petal.Length,
+         grand.diff_Petal.Length = Petal.Length - grand.mean_Petal.Length,
+         jitter_x.axis = runif(dim(iris)[1]))
+
+ggplot(iris.new, aes(x = jitter_x.axis, y = Petal.Length)) +
+  geom_segment(aes(yend = grand.mean_Petal.Length, xend = jitter_x.axis), linetype = "dotted") +
+  geom_jitter(size = 2) + 
+  geom_hline(yintercept = grand.mean_Petal.Length)
+
+ggplot(iris.new, aes(x = grand.diff_Petal.Length^2/150)) + geom_density()
+
+ggplot(iris, aes(y = Petal.Length, x = 1, group = Species, color = Species)) + 
+  geom_jitter(alpha = 0.5) +
+  geom_hline(yintercept = setosa.mean_Petal.Length, color = "red") +
+  geom_hline(yintercept = versicolor.mean_Petal.Length, color = "green") +
+  geom_hline(yintercept = virginica.mean_Petal.Length, color = "blue") +
+  xlab("") + scale_x_continuous(labels = NULL)
+  
+
+anova(lm(Petal.Length ~ Species, iris))
 
 ## SET PARAMETERS ----
 
@@ -21,12 +74,7 @@ df <- data.frame(y, x, x.jitter) # create data frame
 group.means <- df %>% group_by(x) %>% summarise(y.mean = mean(y)) # get mean response for each factor level
 grand.mean <- mean(y)
 
-df.full <- left_join(df, group.means) %>% 
-  mutate(grand.mean = grand.mean, 
-         resid.mean = y.mean - grand.mean, 
-         squares.mean = resid.mean^2, 
-         resid = y - y.mean, 
-         squares.resid = resid^2)
+## come up with a visualization where the colors designate groups all within the same set of points. See if that is helpful.
 
 variance_betweengroups <- ggplot(group.means, aes(x = x, y = y.mean)) + 
   geom_point(color = "red") + 
@@ -35,7 +83,7 @@ variance_betweengroups <- ggplot(group.means, aes(x = x, y = y.mean)) +
   scale_y_continuous(limits = range(y)) + 
   ylab("y")
 
-variance_withingroups <- ggplot(df.full, aes(x = x.jitter, y = y)) + 
+variance_withingroups <- ggplot(df, aes(x = x.jitter, y = y)) + 
   geom_point() + 
   geom_linerange(aes(ymin = y.mean, ymax = y)) +
   geom_errorbarh(aes(xmin = as.numeric(x) - stdev*3, 
@@ -48,6 +96,12 @@ variance_withingroups <- ggplot(df.full, aes(x = x.jitter, y = y)) +
 
 plot_grid(variance_betweengroups, variance_withingroups)
   
+df.full <- left_join(df, group.means) %>% 
+  mutate(grand.mean = grand.mean, 
+         resid.mean = y.mean - grand.mean, 
+         squares.mean = resid.mean^2, 
+         resid = y - y.mean, 
+         squares.resid = resid^2)
 
 ## ANOVA with R ----
 
