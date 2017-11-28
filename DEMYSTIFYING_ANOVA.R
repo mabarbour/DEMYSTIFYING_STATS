@@ -40,22 +40,28 @@ virginica.mean_Petal.Length <- mean(filter(iris, Species == "virginica")$Petal.L
 iris.new <- left_join(iris, species.means) %>% 
   mutate(grand.mean_Petal.Length = grand.mean_Petal.Length,
          grand.diff_Petal.Length = Petal.Length - grand.mean_Petal.Length,
+         mean.diff_Petal.Length = Petal.Length - mean_Petal.Length,
          jitter_x.axis = runif(dim(iris)[1]))
+
+Max_Sum.of.Squares <- sum(iris.new$grand.diff_Petal.Length^2)
+Species_Sum.of.Squares <- sum()
+
+# The palette with black:
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 ggplot(iris.new, aes(x = jitter_x.axis, y = Petal.Length)) +
   geom_segment(aes(yend = grand.mean_Petal.Length, xend = jitter_x.axis), linetype = "dotted") +
   geom_jitter(size = 2) + 
-  geom_hline(yintercept = grand.mean_Petal.Length)
+  geom_hline(yintercept = grand.mean_Petal.Length) +
+  xlab("") + scale_x_continuous(labels = NULL)
 
-ggplot(iris.new, aes(x = grand.diff_Petal.Length^2/150)) + geom_density()
-
-ggplot(iris, aes(y = Petal.Length, x = 1, group = Species, color = Species)) + 
-  geom_jitter(alpha = 0.5) +
+ggplot(iris, aes(y = Petal.Length, x = jitter_x.axis, group = Species, color = Species)) + 
+  geom_jitter(size = 2) +
   geom_hline(yintercept = setosa.mean_Petal.Length, color = "red") +
   geom_hline(yintercept = versicolor.mean_Petal.Length, color = "green") +
   geom_hline(yintercept = virginica.mean_Petal.Length, color = "blue") +
   xlab("") + scale_x_continuous(labels = NULL)
-  
+
 
 anova(lm(Petal.Length ~ Species, iris))
 
