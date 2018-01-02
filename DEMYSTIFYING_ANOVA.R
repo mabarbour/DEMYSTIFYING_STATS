@@ -65,6 +65,19 @@ ggplot(iris, aes(y = Petal.Length, x = jitter_x.axis, group = Species, color = S
 
 anova(lm(Petal.Length ~ Species, iris))
 
+summary(lm(Petal.Length ~ Species - 1, iris))
+sd(coef(lm(Petal.Length ~ Species - 1, iris)))
+# interesting that this doesn't correspond, even though this is how fixed-effects variance is calculated by Schielzeth and Nakagawa.
+sd(as.vector(coef(lm(Petal.Length ~ Species, iris, contrasts = list(Species="contr.sum"))) %*% t(model.matrix(lm(Petal.Length ~ Species, iris, contrasts = list(Species="contr.sum"))))))
+
+#var(as.vector(fixef(mF) %*% t(mF@X)))
+
+library(lme4)
+summary(lmer(Petal.Length ~ (1|Species), iris))
+sd(ranef(lmer(Petal.Length ~ (1|Species), iris))$Species[ ,"(Intercept)"]) # interesting...the SD(conditional modes) corresponds to the SD of the random effects, which is what I expected.
+table(iris$Species) # note equal sample sizes, which may make the SD of conditional modes correspond more closely to random effect SD.
+
+
 ## SET PARAMETERS ----
 
 n <- 100 # sample size
